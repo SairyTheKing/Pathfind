@@ -40,9 +40,10 @@ local DEFAULT_CONFIG: Types.PathfindConfig = {
     agentCanSlide = false,
     
     moveSpeed = nil,
-    turnSpeed = 12,
-    reachDistance = 2,
+    turnSpeed = 16,
+    reachDistance = 2.5,
     jumpPower = nil,
+    lookAhead = 1,
     
     repathInterval = 0.5,
     repathThreshold = 4,
@@ -54,6 +55,8 @@ local DEFAULT_CONFIG: Types.PathfindConfig = {
     stuckThreshold = 2,
     stuckRecoveryAttempts = 3,
     stuckMoveDelta = 0.5,
+    
+    followStopDistance = 3,
     
     losCheckEnabled = true,
     losRaycastParams = nil,
@@ -139,6 +142,7 @@ function Pathfind.new(character: Model?, config: Types.PathfindConfig?): Pathfin
         reachDistance = self._config.reachDistance,
         moveSpeed = self._config.moveSpeed,
         jumpPower = self._config.jumpPower,
+        lookAhead = self._config.lookAhead,
         losCheckEnabled = self._config.losCheckEnabled,
         losRaycastParams = self._config.losRaycastParams,
     })
@@ -239,7 +243,7 @@ function Pathfind:GoTo(target: Vector3 | BasePart | Model, timeout: number?): Pa
     return self
 end
 
-function Pathfind:Follow(target: Instance, repathInterval: number?): Pathfind
+function Pathfind:Follow(target: Instance, repathInterval: number?, stopDistance: number?): Pathfind
     if not self._alive then return self end
     
     -- Stop any current movement
@@ -260,6 +264,7 @@ function Pathfind:Follow(target: Instance, repathInterval: number?): Pathfind
     end
     
     local interval = repathInterval or self._config.repathInterval or 0.5
+    local stopDist = stopDistance or self._config.followStopDistance or 3
     
     self._debug:Log("Following: " .. target:GetFullName())
     self._currentTarget = target
@@ -278,9 +283,18 @@ function Pathfind:Follow(target: Instance, repathInterval: number?): Pathfind
                 break
             end
             
-            -- Check if we should repath
+            -- Check if we're close enough to stop
             local currentPos = self._movementEngine:_getCharacterPosition()
             if currentPos then
+                local distToTarget = (currentPos - targetPos).Magnitude
+                if distToTarget <= stopDist then
+                    self._debug:Log("Reached follow target (" .. math.floor(distToTarget) .. " studs)")
+                    self:Stop()
+                    self.Completed:Fire(true)
+                    return
+                end
+                
+                -- Check if we should repath
                 local shouldRepath = self._pathManager:ShouldRepathForMovingTarget(currentPos, targetPos)
                 
                 if shouldRepath then

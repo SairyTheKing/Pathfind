@@ -4,7 +4,7 @@
     Contains all type definitions used throughout the Pathfind library.
     
     @author Pathfind Contributors
-    @version 1.0.0
+    @version 1.1.0
     @license MIT
     @date 2026
 ]]
@@ -18,10 +18,11 @@ export type PathfindConfig = {
     agentCanSlide: boolean?,
     
     -- Movement settings
-    moveSpeed: number?,             -- Override humanoid walk speed (nil = use current)
-    turnSpeed: number?,             -- How fast the character rotates (radians/sec, default = 12)
-    reachDistance: number?,          -- Distance to consider a waypoint reached (default = 2)
-    jumpPower: number?,             -- Override jump power (nil = use humanoid default)
+    moveSpeed: number?,             -- Override humanoid walk speed (nil = keep current, NO forced change)
+    turnSpeed: number?,             -- How fast the character rotates (radians/sec, default = 16)
+    reachDistance: number?,          -- Distance to consider a waypoint reached (default = 2.5)
+    jumpPower: number?,             -- Override jump power (nil = keep current, NO forced change)
+    lookAhead: number?,             -- How many waypoints ahead to aim for smooth turns (default = 1)
     
     -- Path settings
     repathInterval: number?,        -- Seconds between path recalculations when following (default = 0.5)
@@ -35,6 +36,9 @@ export type PathfindConfig = {
     stuckThreshold: number?,        -- Seconds before considered stuck (default = 2)
     stuckRecoveryAttempts: number?, -- Max recovery attempts before Failed event (default = 3)
     stuckMoveDelta: number?,        -- Min studs moved to not be "stuck" (default = 0.5)
+    
+    -- Follow settings
+    followStopDistance: number?,     -- Stop following when this close (studs, default = 3)
     
     -- Line-of-sight settings
     losCheckEnabled: boolean?,      -- Enable line-of-sight waypoint skipping (default = true)
