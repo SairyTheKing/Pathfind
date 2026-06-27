@@ -647,7 +647,7 @@ function Pathfind:Follow(target, repathInterval, stopDistance)
         while self._alive and target and target.Parent do
             if not self._alive then break end
             if self._isPaused then task.wait(0.1) continue end
-            if self._status ~= "computing" and self._status ~= "moving" then break end
+            if self._status == "idle" or self._status == "failed" then break end
             local targetPos = self:_resolveTargetPosition(target)
             if not targetPos then self:_fail("Follow target lost") break end
             local currentPos = self._movementEngine:_getCharacterPosition()
@@ -665,7 +665,7 @@ function Pathfind:Follow(target, repathInterval, stopDistance)
             end
             task.wait(interval)
         end
-        if self._alive then
+        if self._alive and self._status ~= "failed" then
             self.Completed:Fire(false, "Follow loop ended")
             self._status = "idle"
         end
