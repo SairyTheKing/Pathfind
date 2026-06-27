@@ -1,0 +1,10 @@
+{
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Pathfind": {
+        "$path": "src"
+      }
+    }
+  }
+}
