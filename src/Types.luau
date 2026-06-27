@@ -23,6 +23,8 @@ export type PathfindConfig = {
     reachDistance: number?,          -- Distance to consider a waypoint reached (default = 2.5)
     jumpPower: number?,             -- Override jump power (nil = keep current, NO forced change)
     lookAhead: number?,             -- How many waypoints ahead to aim for smooth turns (default = 1)
+    smoothMovement: boolean?,        -- Enable Catmull-Rom curve smoothing between waypoints (default = true)
+    smoothSegments: number?,         -- Number of interpolation segments per waypoint pair (default = 4)
     
     -- Path settings
     repathInterval: number?,        -- Seconds between path recalculations when following (default = 0.5)

@@ -8,7 +8,7 @@
     Uses lookahead for smooth cornering.
     
     @author Pathfind Contributors
-    @version 1.1.0
+    @version 1.2.0
     @license MIT
 ]]
 
@@ -39,6 +39,8 @@ export type MovementEngine = typeof(setmetatable({} :: {
     _moveSpeed: number?,
     _jumpPower: number?,
     _lookAhead: number,
+    _smoothMovement: boolean,
+    _smoothSegments: number,
     _losCheckEnabled: boolean,
     _losRaycastParams: RaycastParams?,
     _state: MovementState,
@@ -57,6 +59,8 @@ function MovementEngine.new(config: {
     lookAhead: number?,
     losCheckEnabled: boolean?,
     losRaycastParams: RaycastParams?,
+    smoothMovement: boolean?,
+    smoothSegments: number?,
 }?): MovementEngine
     local self = setmetatable({}, MovementEngine)
     
@@ -68,6 +72,8 @@ function MovementEngine.new(config: {
     self._lookAhead = config.lookAhead or 1
     self._losCheckEnabled = config.losCheckEnabled ~= false
     self._losRaycastParams = config.losRaycastParams
+    self._smoothMovement = config.smoothMovement ~= false
+    self._smoothSegments = config.smoothSegments or 4
     self._character = nil
     self._humanoid = nil
     self._rootPart = nil
@@ -154,6 +160,49 @@ function MovementEngine:_getCharacterPosition(): Vector3?
     return nil
 end
 
+function MovementEngine:_catmullRom(p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3, t: number): Vector3
+    local t2 = t * t
+    local t3 = t2 * t
+    return 0.5 * ((2 * p1) +
+        (-p0 + p2) * t +
+        (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
+        (-p0 + 3 * p1 - 3 * p2 + p3) * t3)
+end
+
+function MovementEngine:_generateSmoothWaypoints(waypoints: { WaypointData }): { WaypointData }
+    if #waypoints < 3 then return waypoints end
+    
+    local smooth = {}
+    local segs = self._smoothSegments or 4
+    
+    table.insert(smooth, waypoints[1])
+    
+    for i = 2, #waypoints do
+        local p0 = waypoints[math.max(1, i - 2)].position
+        local p1 = waypoints[math.max(1, i - 1)].position
+        local p2 = waypoints[i].position
+        local p3 = waypoints[math.min(#waypoints, i + 1)].position
+        
+        -- Skip interpolation for jump waypoints — keep them sharp
+        if waypoints[i].action == Enum.PathWaypointAction.Jump
+            or waypoints[i - 1].action == Enum.PathWaypointAction.Jump then
+            table.insert(smooth, waypoints[i])
+        else
+            for s = 1, segs do
+                local t = s / segs
+                local pos = self:_catmullRom(p0, p1, p2, p3, t)
+                table.insert(smooth, {
+                    position = pos,
+                    action = Enum.PathWaypointAction.Walk,
+                    index = #smooth + 1,
+                })
+            end
+        end
+    end
+    
+    return #smooth > 0 and smooth or waypoints
+end
+
 function MovementEngine:_getLookaheadPosition(currentIndex: number): Vector3?
     local waypoints = self._state.waypoints
     local targetIndex = math.min(currentIndex + self._lookAhead, #waypoints)
@@ -162,12 +211,10 @@ function MovementEngine:_getLookaheadPosition(currentIndex: number): Vector3?
     for i = currentIndex, targetIndex do
         local wp = waypoints[i]
         if wp and wp.action == Enum.PathWaypointAction.Jump then
-            -- If we hit a jump waypoint, aim at it directly
             return wp.position
         end
     end
     
-    -- Use the lookahead waypoint position
     if targetIndex <= #waypoints then
         return waypoints[targetIndex].position
     end
@@ -256,7 +303,9 @@ function MovementEngine:StartMoving(waypoints: { WaypointData }, targetPosition:
         self._humanoid.JumpPower = self._jumpPower
     end
     
-    self._state.waypoints = waypoints
+    -- Apply Catmull-Rom smoothing when enabled
+    local finalWaypoints = self._smoothMovement and self:_generateSmoothWaypoints(waypoints) or waypoints
+    self._state.waypoints = finalWaypoints
     self._state.currentWaypointIndex = 1
     self._state.isMoving = true
     self._state.isPaused = false

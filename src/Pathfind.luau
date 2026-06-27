@@ -143,6 +143,8 @@ function Pathfind.new(character: Model?, config: Types.PathfindConfig?): Pathfin
         moveSpeed = self._config.moveSpeed,
         jumpPower = self._config.jumpPower,
         lookAhead = self._config.lookAhead,
+        smoothMovement = self._config.smoothMovement,
+        smoothSegments = self._config.smoothSegments,
         losCheckEnabled = self._config.losCheckEnabled,
         losRaycastParams = self._config.losRaycastParams,
     })

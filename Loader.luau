@@ -1,4 +1,4 @@
--- Pathfind v1.1.0
+-- Pathfind v1.2.0
 -- Lightweight pathfinding library for Roblox executors
 -- Usage: local Pathfind = loadstring(game:HttpGet("https://raw.githubusercontent.com/SairyTheKing/Pathfind/master/Loader.luau"))()
 
@@ -292,6 +292,8 @@ function MovementEngine.new(config)
     self._moveSpeed = config.moveSpeed       -- nil = don't change
     self._jumpPower = config.jumpPower       -- nil = don't change
     self._lookAhead = config.lookAhead or 1
+    self._smoothMovement = config.smoothMovement ~= false
+    self._smoothSegments = config.smoothSegments or 4
     self._losCheckEnabled = config.losCheckEnabled ~= false
     self._character = nil
     self._humanoid = nil
@@ -343,6 +345,39 @@ function MovementEngine:_getCharacterPosition()
     if self._rootPart and self._rootPart.Parent then return self._rootPart.Position end
     if self:_refreshReferences() and self._rootPart then return self._rootPart.Position end
     return nil
+end
+
+function MovementEngine:_catmullRom(p0, p1, p2, p3, t)
+    local t2 = t * t
+    local t3 = t2 * t
+    return 0.5 * ((2 * p1) +
+        (-p0 + p2) * t +
+        (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
+        (-p0 + 3 * p1 - 3 * p2 + p3) * t3)
+end
+
+function MovementEngine:_generateSmoothWaypoints(waypoints)
+    if #waypoints < 3 then return waypoints end
+    local smooth = {}
+    local segs = self._smoothSegments or 4
+    table.insert(smooth, waypoints[1])
+    for i = 2, #waypoints do
+        local p0 = waypoints[math.max(1, i - 2)].position
+        local p1 = waypoints[math.max(1, i - 1)].position
+        local p2 = waypoints[i].position
+        local p3 = waypoints[math.min(#waypoints, i + 1)].position
+        if waypoints[i].action == Enum.PathWaypointAction.Jump
+            or waypoints[i - 1].action == Enum.PathWaypointAction.Jump then
+            table.insert(smooth, waypoints[i])
+        else
+            for s = 1, segs do
+                local t = s / segs
+                local pos = self:_catmullRom(p0, p1, p2, p3, t)
+                table.insert(smooth, { position = pos, action = Enum.PathWaypointAction.Walk, index = #smooth + 1 })
+            end
+        end
+    end
+    return #smooth > 0 and smooth or waypoints
 end
 
 function MovementEngine:_getLookaheadPosition(currentIndex)
@@ -397,7 +432,8 @@ function MovementEngine:StartMoving(waypoints, targetPosition)
     -- Only override if explicitly set
     if self._moveSpeed and self._humanoid then self._humanoid.WalkSpeed = self._moveSpeed end
     if self._jumpPower and self._humanoid then self._humanoid.JumpPower = self._jumpPower end
-    self._state.waypoints = waypoints
+    local finalWaypoints = self._smoothMovement and self:_generateSmoothWaypoints(waypoints) or waypoints
+    self._state.waypoints = finalWaypoints
     self._state.currentWaypointIndex = 1
     self._state.isMoving = true
     self._state.isPaused = false
@@ -477,6 +513,7 @@ local DEFAULT_CONFIG = {
     agentRadius = nil, agentHeight = nil,
     agentCanJump = true, agentCanClimb = false, agentCanSlide = false,
     moveSpeed = nil, turnSpeed = 16, reachDistance = 2.5, jumpPower = nil, lookAhead = 1,
+    smoothMovement = true, smoothSegments = 4,
     repathInterval = 0.5, repathThreshold = 4, maxPathAttempts = 3,
     timeout = nil, waypointTimeout = 4,
     antiStuckEnabled = true, stuckThreshold = 2, stuckRecoveryAttempts = 3, stuckMoveDelta = 0.5,
@@ -531,6 +568,8 @@ function Pathfind.new(character, config)
         moveSpeed = self._config.moveSpeed,
         jumpPower = self._config.jumpPower,
         lookAhead = self._config.lookAhead,
+        smoothMovement = self._config.smoothMovement,
+        smoothSegments = self._config.smoothSegments,
         losCheckEnabled = self._config.losCheckEnabled,
         losRaycastParams = self._config.losRaycastParams,
     })
