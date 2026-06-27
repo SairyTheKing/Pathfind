@@ -4,7 +4,7 @@
     Handles path computation, recalculation, and validation.
     Wraps PathfindingService with smart caching and throttling.
     
-    @author Pathfind Contributors
+    @author SairyTheKing
     @version 1.2.0
     @license MIT
 ]]

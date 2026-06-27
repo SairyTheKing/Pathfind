@@ -4,7 +4,7 @@
     Lightweight event bus for Pathfind events.
     Wraps BindableEvents for clean connection management.
     
-    @author Pathfind Contributors
+    @author SairyTheKing
     @version 1.2.0
     @license MIT
 ]]

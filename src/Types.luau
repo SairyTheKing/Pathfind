@@ -3,7 +3,7 @@
     
     Contains all type definitions used throughout the Pathfind library.
     
-    @author Pathfind Contributors
+    @author SairyTheKing
     @version 1.2.0
     @license MIT
     @date 2026

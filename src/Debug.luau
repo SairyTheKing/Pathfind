@@ -4,7 +4,7 @@
     Draws waypoints, path lines, and debug text for development.
     Only active when debug mode is enabled.
     
-    @author Pathfind Contributors
+    @author SairyTheKing
     @version 1.2.0
     @license MIT
 ]]

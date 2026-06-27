@@ -7,7 +7,7 @@
     Never changes WalkSpeed or JumpPower unless explicitly configured.
     Uses lookahead for smooth cornering.
     
-    @author Pathfind Contributors
+    @author SairyTheKing
     @version 1.2.0
     @license MIT
 ]]

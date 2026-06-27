@@ -4,7 +4,7 @@
     Detects when a character is stuck and attempts recovery.
     Recovery strategies: jump, recalculate path, small movement adjustments.
     
-    @author Pathfind Contributors
+    @author SairyTheKing
     @version 1.2.0
     @license MIT
 ]]
