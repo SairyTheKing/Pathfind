@@ -4,7 +4,7 @@
     Contains all type definitions used throughout the Pathfind library.
     
     @author SairyTheKing
-    @version 1.2.0
+    @version 1.3.0
     @license MIT
     @date 2026
 ]]

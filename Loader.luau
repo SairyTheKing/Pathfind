@@ -451,7 +451,6 @@ end
 
 function MovementEngine:_startMovementLoop()
     if self._connection then self._connection:Disconnect() end
-    local flatOne = Vector3.new(1, 0, 1) -- cached constant
     self._connection = game:GetService("RunService").Heartbeat:Connect(function(dt)
         if not self._state.isMoving or self._state.isPaused then return end
         if not self:_isCharacterValid() then
