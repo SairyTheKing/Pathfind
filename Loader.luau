@@ -473,8 +473,9 @@ function MovementEngine:_startMovementLoop()
 
         local wp = wps[idx]
         local dx = currentPos.X - wp.position.X
+        local dy = currentPos.Y - wp.position.Y
         local dz = currentPos.Z - wp.position.Z
-        local dist = math.sqrt(dx * dx + dz * dz) -- skip Y for horizontal distance (faster)
+        local dist = math.sqrt(dx * dx + dy * dy + dz * dz) -- full 3D distance
 
         if dist <= self._reachDistance then
             if self._onReachWaypoint then self._onReachWaypoint(idx, wp) end

@@ -355,13 +355,13 @@ function MovementEngine:_startMovementLoop()
         
         local currentWaypoint = waypoints[waypointIndex]
         local wpPos = currentWaypoint.position
-        -- Fast horizontal distance (skip Y component, avoid sqrt)
         local dx = currentPos.X - wpPos.X
+        local dy = currentPos.Y - wpPos.Y
         local dz = currentPos.Z - wpPos.Z
-        local dist = dx * dx + dz * dz
+        local distSq = dx * dx + dy * dy + dz * dz
         local reachSq = self._reachDistance * self._reachDistance
         
-        if dist <= reachSq then
+        if distSq <= reachSq then
             if self._onReachWaypoint then
                 self._onReachWaypoint(waypointIndex, currentWaypoint)
             end
