@@ -7,12 +7,13 @@ A lightweight, modular, production-ready pathfinding library for Roblox that wra
 ## Features
 
 - 🚶 **Smooth Waypoint Following** — Natural character movement without jitter
+- 🌊 **Catmull-Rom Curves** — Smooth curved paths instead of sharp waypoint angles
 - 🦘 **Automatic Jump Handling** — Handles jump waypoints seamlessly
 - 👁️ **Line-of-Sight Optimization** — Skips waypoints when the path is clear
 - 🔄 **Smart Repathing** — Recalculates when targets move or paths become blocked
 - 🛡️ **Anti-Stuck System** — Detects and recovers from stuck states
 - 👻 **Respawn Handling** — Automatically handles character respawns
-- 👁️ **Path Preview** — Preview paths before committing to movement
+- 👀 **Path Preview** — Preview paths before committing to movement
 - 🎯 **Waypoint Events** — Get notified at every waypoint reached
 - 📊 **Path Info** — Query detailed path state and progress
 - 🎨 **Debug Visualization** — Draw waypoints, lines, and debug info
@@ -161,7 +162,6 @@ local path = Pathfind.new(character, {
     repathThreshold = 4,        -- Studs target must move to repath
     maxPathAttempts = 3,        -- Max failed attempts
     timeout = nil,              -- Max path duration (nil = none)
-    waypointTimeout = 4,        -- Max seconds per waypoint
 
     -- Anti-Stuck
     antiStuckEnabled = true,    -- Enable anti-stuck

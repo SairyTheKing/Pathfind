@@ -31,7 +31,6 @@ export type PathfindConfig = {
     repathThreshold: number?,       -- Studs the target must move before repathing (default = 4)
     maxPathAttempts: number?,       -- Max failed path attempts before giving up (default = 3)
     timeout: number?,               -- Max seconds for entire path (nil = no timeout)
-    waypointTimeout: number?,       -- Max seconds per waypoint (default = 4)
     
     -- Anti-stuck settings
     antiStuckEnabled: boolean?,     -- Enable anti-stuck detection (default = true)

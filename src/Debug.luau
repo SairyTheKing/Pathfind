@@ -5,7 +5,7 @@
     Only active when debug mode is enabled.
     
     @author Pathfind Contributors
-    @version 1.0.0
+    @version 1.2.0
     @license MIT
 ]]
 

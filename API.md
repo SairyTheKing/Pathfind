@@ -60,7 +60,6 @@ export type PathfindConfig = {
     repathThreshold: number?,       -- Studs target must move to trigger repath (default: 4)
     maxPathAttempts: number?,       -- Max failed path computations (default: 3)
     timeout: number?,               -- Max seconds for entire path (nil = none)
-    waypointTimeout: number?,       -- Max seconds per waypoint (default: 4)
 
     -- Anti-Stuck
     antiStuckEnabled: boolean?,     -- Enable anti-stuck system (default: true)
@@ -692,7 +691,6 @@ end)
     repathThreshold     = 4,            -- studs
     maxPathAttempts     = 3,
     timeout             = nil,          -- no timeout
-    waypointTimeout     = 4,            -- seconds
 
     -- Anti-Stuck
     antiStuckEnabled    = true,
@@ -735,7 +733,6 @@ end)
 | `repathThreshold` | `number` | `4` | How far (in studs) the target must move to trigger a repath. |
 | `maxPathAttempts` | `number` | `3` | Maximum number of failed path computations before giving up. |
 | `timeout` | `number?` | `nil` | Maximum seconds for the entire path. `nil` = no timeout. |
-| `waypointTimeout` | `number` | `4` | Maximum seconds to spend on a single waypoint before moving on. |
 | `antiStuckEnabled` | `boolean` | `true` | Enable the anti-stuck detection system. |
 | `stuckThreshold` | `number` | `2` | Seconds without movement before considered "stuck". |
 | `stuckRecoveryAttempts` | `number` | `3` | Maximum recovery attempts before firing `Failed`. |

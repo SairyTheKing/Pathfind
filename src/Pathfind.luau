@@ -40,7 +40,6 @@ local DEFAULT_CONFIG: Types.PathfindConfig = {
     repathThreshold = 4,
     maxPathAttempts = 3,
     timeout = nil,
-    waypointTimeout = 4,
     
     antiStuckEnabled = true,
     stuckThreshold = 2,

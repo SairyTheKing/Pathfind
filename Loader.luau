@@ -515,7 +515,7 @@ local DEFAULT_CONFIG = {
     moveSpeed = nil, turnSpeed = 16, reachDistance = 2.5, jumpPower = nil, lookAhead = 1,
     smoothMovement = true, smoothSegments = 4,
     repathInterval = 0.5, repathThreshold = 4, maxPathAttempts = 3,
-    timeout = nil, waypointTimeout = 4,
+    timeout = nil,
     antiStuckEnabled = true, stuckThreshold = 2, stuckRecoveryAttempts = 3, stuckMoveDelta = 0.5,
     followStopDistance = 3,
     losCheckEnabled = true, losRaycastParams = nil,

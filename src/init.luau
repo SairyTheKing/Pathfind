@@ -28,10 +28,10 @@
         
         path:GoTo(workspace.TargetPart)
     
-    @author Pathfind Contributors
-    @version 1.0.0
+    @author SairyTheKing
+    @version 1.2.0
     @license MIT
-    @see https://github.com/your-username/Pathfind
+    @see https://github.com/SairyTheKing/Pathfind
 ]]
 
 local Pathfind = require(script.Pathfind)
