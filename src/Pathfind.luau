@@ -207,9 +207,9 @@ function Pathfind:_setupCharacterWatch()
     end)
 end
 
--- =========================================================================
+
 -- Public API
--- =========================================================================
+
 
 function Pathfind:GoTo(target: Vector3 | BasePart | Model, timeout: number?): Pathfind
     if not self._alive then return self end
@@ -455,9 +455,9 @@ function Pathfind:CancelGoTo()
     self._debug:Clear()
 end
 
--- =========================================================================
+
 -- Configuration
--- =========================================================================
+
 
 function Pathfind:SetConfig(key: string, value: any)
     (self._config :: any)[key] = value
@@ -479,9 +479,9 @@ function Pathfind:EnableDebug(enabled: boolean)
     self._debug:SetEnabled(enabled)
 end
 
--- =========================================================================
+
 -- Internal - Path Computation
--- =========================================================================
+
 
 function Pathfind:_computeAndMove(targetPos: Vector3, originalTarget: any, timeout: number?)
     if not self._alive then return end
@@ -634,9 +634,9 @@ function Pathfind:_cancelThreads(threadType: string?)
     end
 end
 
--- =========================================================================
+
 -- Internal - Movement Callbacks
--- =========================================================================
+
 
 function Pathfind:_onWaypointReached(index: number, waypoint: any)
     self._debug:Log("Waypoint " .. index .. " reached")
@@ -678,9 +678,9 @@ function Pathfind:_fail(reason: string)
     self._status = "idle"
 end
 
--- =========================================================================
+
 -- Internal - Utilities
--- =========================================================================
+
 
 function Pathfind:_resolveTargetPosition(target: Vector3 | Instance): Vector3?
     if typeof(target) == "Vector3" then
@@ -709,9 +709,9 @@ function Pathfind:_resolveTargetPosition(target: Vector3 | Instance): Vector3?
     return nil
 end
 
--- =========================================================================
+
 -- Cleanup
--- =========================================================================
+
 
 function Pathfind:Destroy()
     if not self._alive then return end

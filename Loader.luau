@@ -1,23 +1,8 @@
---[[
-    Pathfind Library - Executor Loader v1.1.0
-    
-    Single-file version for use with Roblox executors.
-    No forced WalkSpeed or JumpPower changes — uses character's existing values.
-    Smooth lookahead turning for natural movement.
-    
-    Usage:
-        local Pathfind = loadstring(game:HttpGet("https://raw.githubusercontent.com/SairyTheKing/Pathfind/master/Loader.luau"))()
-    
-    Or for HTTP-disabled executors, copy-paste this entire file.
-    
-    @author Pathfind Contributors
-    @version 1.1.0
-    @license MIT
-]]
+-- Pathfind v1.1.0
+-- Lightweight pathfinding library for Roblox executors
+-- Usage: local Pathfind = loadstring(game:HttpGet("https://raw.githubusercontent.com/SairyTheKing/Pathfind/master/Loader.luau"))()
 
--- =========================================================================
 -- Event Module
--- =========================================================================
 
 local Event = {}
 Event.__index = Event
@@ -58,9 +43,7 @@ end
 
 function Event:Destroy() self:DisconnectAll() self._bindable:Destroy() end
 
--- =========================================================================
 -- Debug Module
--- =========================================================================
 
 local Debug = {}
 Debug.__index = Debug
@@ -160,9 +143,7 @@ end
 
 function Debug:Destroy() self:Clear() if self._folder and self._folder.Parent then self._folder:Destroy() end end
 
--- =========================================================================
 -- AntiStuck Module
--- =========================================================================
 
 local AntiStuck = {}
 AntiStuck.__index = AntiStuck
@@ -220,9 +201,7 @@ function AntiStuck:GetAdjustmentDirection()
     return Vector3.new(math.cos(angle), 0, math.sin(angle)) * 2
 end
 
--- =========================================================================
 -- PathManager Module
--- =========================================================================
 
 local PathManager = {}
 PathManager.__index = PathManager
@@ -300,9 +279,7 @@ function PathManager:Clear()
     self._currentPath = nil self._currentGoal = nil self._pathAttempts = 0
 end
 
--- =========================================================================
--- MovementEngine Module (v1.1.0 — Natural Movement)
--- =========================================================================
+-- MovementEngine Module
 
 local MovementEngine = {}
 MovementEngine.__index = MovementEngine
@@ -491,9 +468,7 @@ function MovementEngine:GetProgress()
 end
 function MovementEngine:Destroy() self:Stop() self:SetCharacter(nil) end
 
--- =========================================================================
--- Pathfind Core Module (v1.1.0)
--- =========================================================================
+-- Pathfind Core Module
 
 local Pathfind = {}
 Pathfind.__index = Pathfind
@@ -603,9 +578,7 @@ function Pathfind:SetCharacter(character)
     if character then self:_setupCharacterWatch() end
 end
 
--- =========================================================================
 -- Navigation API
--- =========================================================================
 
 function Pathfind:GoTo(target, timeout)
     if not self._alive then return self end
@@ -677,9 +650,7 @@ function Pathfind:PreviewPath(target)
     return { waypoints = path.waypoints, distance = totalDist, success = true }
 end
 
--- =========================================================================
 -- Control API
--- =========================================================================
 
 function Pathfind:Stop()
     if not self._alive then return end
@@ -710,9 +681,7 @@ function Pathfind:Resume()
     self.Resumed:Fire()
 end
 
--- =========================================================================
 -- Query API
--- =========================================================================
 
 function Pathfind:IsMoving() return self._movementEngine:IsMoving() end
 function Pathfind:GetStatus() return self._status end
@@ -740,9 +709,7 @@ function Pathfind:GetPathInfo()
     }
 end
 
--- =========================================================================
 -- Config
--- =========================================================================
 
 function Pathfind:SetConfig(key, value)
     self._config[key] = value
@@ -752,9 +719,7 @@ end
 function Pathfind:GetConfig(key) return self._config[key] end
 function Pathfind:EnableDebug(enabled) self._config.debug = enabled self._debug:SetEnabled(enabled) end
 
--- =========================================================================
 -- Internal
--- =========================================================================
 
 function Pathfind:_computeAndMove(targetPos, originalTarget, timeout)
     if not self._alive then return end
