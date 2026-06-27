@@ -23,29 +23,11 @@
 
 ## Installation
 
-### Rojo
+Paste this in your executor:
 
-```json
-{
-  "tree": {
-    "$className": "DataModel",
-    "ReplicatedStorage": {
-      "Pathfind": { "$path": "src" }
-    }
-  }
-}
+```lua
+local Pathfind = loadstring(game:HttpGet("https://raw.githubusercontent.com/SairyTheKing/Pathfind/master/Loader.luau"))()
 ```
-
-### Wally
-
-```toml
-[dependencies]
-Pathfind = "your-username/pathfind@1.0.0"
-```
-
-### Manual
-
-Copy the `src/` folder into your project and require it via a ModuleScript.
 
 ---
 
@@ -66,9 +48,10 @@ export type PathfindConfig = {
 
     -- Movement
     moveSpeed: number?,             -- Override WalkSpeed (nil = keep current)
-    turnSpeed: number?,             -- Rotation speed in radians/sec (default: 12)
-    reachDistance: number?,         -- Studs to consider a waypoint "reached" (default: 2)
+    turnSpeed: number?,             -- Rotation speed in radians/sec (default: 16)
+    reachDistance: number?,         -- Studs to consider a waypoint "reached" (default: 2.5)
     jumpPower: number?,             -- Override JumpPower (nil = keep current)
+    lookAhead: number?,             -- Waypoints ahead for smooth turns (default: 1)
 
     -- Path Management
     repathInterval: number?,        -- Seconds between repath checks (default: 0.5)
@@ -82,6 +65,9 @@ export type PathfindConfig = {
     stuckThreshold: number?,        -- Seconds before considered stuck (default: 2)
     stuckRecoveryAttempts: number?, -- Max recovery attempts (default: 3)
     stuckMoveDelta: number?,        -- Min studs to reset stuck timer (default: 0.5)
+
+    -- Follow
+    followStopDistance: number?,     -- Stop following when this close (default: 3)
 
     -- Line-of-Sight
     losCheckEnabled: boolean?,      -- Enable LOS waypoint skipping (default: true)
@@ -687,8 +673,9 @@ end)
 
     -- Movement
     moveSpeed           = nil,          -- Keep current WalkSpeed
-    turnSpeed           = 12,           -- radians/sec
-    reachDistance        = 2,           -- studs
+    turnSpeed           = 16,           -- radians/sec
+    reachDistance        = 2.5,         -- studs
+    lookAhead           = 1,           -- waypoints ahead for smooth turns
     jumpPower           = nil,          -- Keep current JumpPower
 
     -- Path Management
@@ -703,6 +690,9 @@ end)
     stuckThreshold      = 2,            -- seconds
     stuckRecoveryAttempts = 3,
     stuckMoveDelta      = 0.5,          -- studs
+
+    -- Follow
+    followStopDistance   = 3,            -- studs
 
     -- Line-of-Sight
     losCheckEnabled     = true,
@@ -726,9 +716,10 @@ end)
 | `agentCanClimb` | `boolean` | `false` | Whether the agent can climb ladders/rope. |
 | `agentCanSlide` | `boolean` | `false` | Whether the agent can slide on slopes. |
 | `moveSpeed` | `number?` | `nil` | If set, overrides the character's `WalkSpeed`. |
-| `turnSpeed` | `number` | `12` | How fast the character rotates toward waypoints (radians/sec). |
-| `reachDistance` | `number` | `2` | How close (in studs) the character must be to a waypoint to count as "reached". |
+| `turnSpeed` | `number` | `16` | How fast the character rotates toward waypoints (radians/sec). |
+| `reachDistance` | `number` | `2.5` | How close (in studs) the character must be to a waypoint to count as "reached". |
 | `jumpPower` | `number?` | `nil` | If set, overrides the character's `JumpPower`. |
+| `lookAhead` | `number` | `1` | How many waypoints ahead to aim for smoother cornering. |
 | `repathInterval` | `number` | `0.5` | How often (in seconds) to check if the path should be recalculated. |
 | `repathThreshold` | `number` | `4` | How far (in studs) the target must move to trigger a repath. |
 | `maxPathAttempts` | `number` | `3` | Maximum number of failed path computations before giving up. |
@@ -738,6 +729,7 @@ end)
 | `stuckThreshold` | `number` | `2` | Seconds without movement before considered "stuck". |
 | `stuckRecoveryAttempts` | `number` | `3` | Maximum recovery attempts before firing `Failed`. |
 | `stuckMoveDelta` | `number` | `0.5` | Minimum studs moved to reset the stuck timer. |
+| `followStopDistance` | `number` | `3` | How close (in studs) before Follow() stops and fires Completed. |
 | `losCheckEnabled` | `boolean` | `true` | Enable line-of-sight raycast checks to skip waypoints. |
 | `losRaycastParams` | `RaycastParams?` | `nil` | Custom raycast parameters for LOS checks. |
 | `debug` | `boolean` | `false` | Enable debug visualization (waypoints, lines, labels). |
@@ -821,8 +813,6 @@ path:GoTo(workspace.Target)
 ### Basic Navigation
 
 ```lua
-local Pathfind = require(path.to.Pathfind)
-
 local path = Pathfind.new(workspace.MyNPC)
 
 path.Completed:Connect(function(success)

@@ -149,9 +149,10 @@ local path = Pathfind.new(character, {
 
     -- Movement
     moveSpeed = nil,            -- Override walk speed (nil = use current)
-    turnSpeed = 12,             -- Rotation speed (radians/sec)
-    reachDistance = 2,          -- Waypoint reach threshold
+    turnSpeed = 16,             -- Rotation speed (radians/sec)
+    reachDistance = 2.5,        -- Waypoint reach threshold
     jumpPower = nil,            -- Override jump power
+    lookAhead = 1,              -- Waypoints ahead for smooth turning
 
     -- Path Management
     repathInterval = 0.5,       -- Seconds between repath checks
@@ -165,6 +166,9 @@ local path = Pathfind.new(character, {
     stuckThreshold = 2,         -- Seconds before "stuck"
     stuckRecoveryAttempts = 3,  -- Max recovery attempts
     stuckMoveDelta = 0.5,       -- Min movement to reset timer
+
+    -- Follow
+    followStopDistance = 3,      -- Stop following when this close (studs)
 
     -- Line-of-Sight
     losCheckEnabled = true,     -- Enable LOS waypoint skipping
