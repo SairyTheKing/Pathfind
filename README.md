@@ -22,14 +22,19 @@ A lightweight, modular, production-ready pathfinding library for Roblox that wra
 
 ## Installation
 
-### Option 1: Executor / Loadstring (Fastest)
+Paste this in your executor:
 
-Just paste this in your executor:
+```lua
+local Pathfind = loadstring(game:HttpGet("https://raw.githubusercontent.com/SairyTheKing/Pathfind/master/Loader.luau"))()
+```
+
+> **No HTTP?** Copy-paste the entire contents of [`Loader.luau`](Loader.luau) into your executor's script editor.
+
+## Quick Start
 
 ```lua
 local Pathfind = loadstring(game:HttpGet("https://raw.githubusercontent.com/SairyTheKing/Pathfind/master/Loader.luau"))()
 
--- Example usage
 local path = Pathfind.new(game.Players.LocalPlayer.Character, {
     debug = true,
 })
@@ -39,65 +44,6 @@ path.Completed:Connect(function(success)
 end)
 
 path:GoTo(workspace.TargetPart)
-```
-
-> **No HTTP?** Copy-paste the entire contents of [`Loader.luau`](Loader.luau) into your executor's script editor.
-
-### Option 2: Rojo (Recommended)
-
-1. Clone this repository or download the `src/` folder
-2. Place it in your Rojo project under `ServerScriptService` or `ReplicatedStorage`
-3. Reference it in your `default.project.json`:
-
-```json
-{
-  "tree": {
-    "$className": "DataModel",
-    "ServerScriptService": {
-      "Pathfind": {
-        "$path": "src"
-      }
-    }
-  }
-}
-```
-
-### Option 2: Wally
-
-Add to your `wally.toml`:
-
-```toml
-[dependencies]
-Pathfind = "your-username/pathfind@1.0.0"
-```
-
-Then run:
-
-```bash
-wally install
-```
-
-## Quick Start
-
-```lua
-local Pathfind = require(path.to.Pathfind)
-
--- Create a pathfinder
-local path = Pathfind.new(game.Players.LocalPlayer.Character, {
-    debug = true, -- Enable debug visualization
-})
-
--- Go to a target
-path:GoTo(workspace.TargetPart)
-
--- Listen for completion
-path.Completed:Connect(function(success)
-    if success then
-        print("Reached the target!")
-    else
-        print("Failed to reach target")
-    end
-end)
 ```
 
 ## API Reference
