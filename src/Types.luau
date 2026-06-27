@@ -55,6 +55,23 @@ export type WaypointData = {
 
 export type PathStatus = "idle" | "computing" | "moving" | "paused" | "blocked" | "completed" | "failed"
 
+export type PathInfo = {
+    status: PathStatus,
+    target: Vector3?,
+    progress: number,
+    currentWaypoint: number,
+    totalWaypoints: number,
+    distanceToTarget: number?,
+    pathAttempts: number,
+    isPaused: boolean,
+}
+
+export type PathPreview = {
+    waypoints: { WaypointData },
+    distance: number,
+    success: boolean,
+}
+
 export type PathfindEvents = {
     Completed: RBXScriptSignal,     -- (success: boolean, reason: string?)
     Blocked: RBXScriptSignal,       -- (waypointIndex: number)
@@ -64,6 +81,7 @@ export type PathfindEvents = {
     Paused: RBXScriptSignal,        -- ()
     Resumed: RBXScriptSignal,       -- ()
     Started: RBXScriptSignal,       -- (target: Vector3 | Instance)
+    Waypoint: RBXScriptSignal,      -- (index: number, waypoint: WaypointData)
 }
 
 return nil

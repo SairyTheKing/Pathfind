@@ -2,6 +2,8 @@
 
 A lightweight, modular, production-ready pathfinding library for Roblox that wraps `PathfindingService` with a clean, modern API.
 
+> 📖 **[Full API Reference →](API.md)**
+
 ## Features
 
 - 🚶 **Smooth Waypoint Following** — Natural character movement without jitter
@@ -10,9 +12,12 @@ A lightweight, modular, production-ready pathfinding library for Roblox that wra
 - 🔄 **Smart Repathing** — Recalculates when targets move or paths become blocked
 - 🛡️ **Anti-Stuck System** — Detects and recovers from stuck states
 - 👻 **Respawn Handling** — Automatically handles character respawns
+- 👁️ **Path Preview** — Preview paths before committing to movement
+- 🎯 **Waypoint Events** — Get notified at every waypoint reached
+- 📊 **Path Info** — Query detailed path state and progress
 - 🎨 **Debug Visualization** — Draw waypoints, lines, and debug info
 - ⚡ **Performance Optimized** — Throttled computations, low CPU usage
-- 📝 **Well Documented** — Clean Luau types and inline docs
+- 📝 **Well Documented** — Clean Luau types, inline docs, and comprehensive API reference
 - 🧩 **Fully Configurable** — Every aspect can be customized
 
 ## Installation
@@ -76,111 +81,77 @@ end)
 
 ## API Reference
 
+> 📖 **See [API.md](API.md) for the complete, detailed API reference.**
+
 ### `Pathfind.new(character, config?)`
 
 Creates a new Pathfind instance.
 
-**Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `character` | `Model?` | The character model to pathfind with |
-| `config` | `PathfindConfig?` | Optional configuration table |
+```lua
+local path = Pathfind.new(workspace.MyNPC, {
+    debug = true,
+    agentCanJump = true,
+})
+```
 
-**Returns:** `Pathfind` instance
-
----
-
-### `:GoTo(target, timeout?)`
+### `:GoTo(target, timeout?)` → `Pathfind`
 
 Pathfind to a target position or instance.
 
-**Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `target` | `Vector3 \| Instance` | Destination position or instance |
-| `timeout` | `number?` | Optional timeout in seconds |
+```lua
+path:GoTo(workspace.TargetPart)
+path:GoTo(Vector3.new(10, 0, 5), 10) -- with timeout
+path:GoTo(workspace.MovingPart) -- auto-repaths when target moves
+```
 
-**Returns:** `Pathfind` (for chaining)
-
----
-
-### `:Follow(target, repathInterval?)`
+### `:Follow(target, repathInterval?)` → `Pathfind`
 
 Follow a moving target continuously.
 
-**Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `target` | `Instance` | Instance to follow |
-| `repathInterval` | `number?` | Seconds between repaths (default: 0.5) |
+```lua
+path:Follow(player.Character, 0.3)
+```
 
-**Returns:** `Pathfind` (for chaining)
+### `:PreviewPath(target)` → `PathPreview?`
 
----
+Preview a path without starting movement.
 
-### `:Stop()`
+```lua
+local preview = path:PreviewPath(workspace.Enemy)
+if preview and preview.success then
+    print(#preview.waypoints, "waypoints,", preview.distance, "studs")
+end
+```
 
-Stops all current movement and clears the path.
+### `:Stop()` — Stop movement and clear path
+### `:Pause()` — Pause movement
+### `:Resume()` — Resume paused movement
+### `:CancelGoTo()` — Cancel current path (reusable)
 
----
+### Query Methods
 
-### `:Pause()`
+```lua
+path:IsMoving()          --> boolean
+path:GetStatus()         --> PathStatus string
+path:GetProgress()       --> number (0 to 1)
+path:GetPathInfo()       --> PathInfo table
+path:GetWaypoints()      --> { WaypointData }?
+path:GetTarget()         --> Vector3?
+path:GetCharacter()      --> Model?
+path:IsPaused()          --> boolean
+path:IsAlive()           --> boolean
+```
 
-Pauses movement. Call `:Resume()` to continue.
+### Configuration
 
----
+```lua
+path:SetConfig("debug", true)
+path:GetConfig("turnSpeed") --> 12
+path:EnableDebug(true)
+path:SetCharacter(newCharacter)
+```
 
-### `:Resume()`
-
-Resumes paused movement.
-
----
-
-### `:IsMoving(): boolean`
-
-Returns whether the character is currently moving along a path.
-
----
-
-### `:GetStatus(): string`
-
-Returns the current status: `"idle"`, `"computing"`, `"moving"`, `"paused"`, `"blocked"`, `"completed"`, or `"failed"`.
-
----
-
-### `:GetProgress(): number`
-
-Returns movement progress from 0 to 1.
-
----
-
-### `:SetConfig(key, value)`
-
-Updates a configuration value at runtime.
-
----
-
-### `:GetConfig(key): any`
-
-Gets the current value of a configuration key.
-
----
-
-### `:EnableDebug(enabled: boolean)`
-
-Toggles debug visualization on or off.
-
----
-
-### `:SetCharacter(character)`
-
-Changes the character model (useful for respawning).
-
----
-
-### `:Destroy()`
-
-Cleans up all connections and destroys the instance.
+### `:Destroy()` — Clean up everything
 
 ---
 
@@ -188,14 +159,15 @@ Cleans up all connections and destroys the instance.
 
 | Event | Parameters | Description |
 |-------|-----------|-------------|
-| `Completed` | `(success: boolean)` | Fired when path finishes |
-| `Blocked` | `(waypointIndex: number)` | Fired when path is blocked |
-| `Repath` | `(pathIndex: number)` | Fired when path is recalculated |
-| `Stuck` | `(recoveryAttempt: number)` | Fired when stuck is detected |
-| `Failed` | `(reason: string)` | Fired when path fails |
-| `Paused` | — | Fired when movement is paused |
-| `Resumed` | — | Fired when movement is resumed |
-| `Started` | `(target)` | Fired when a new path starts |
+| `Completed` | `(success, reason?)` | Path finished |
+| `Blocked` | `(waypointIndex)` | Path blocked |
+| `Repath` | `(pathIndex)` | Path recalculated |
+| `Stuck` | `(recoveryAttempt)` | Stuck detected |
+| `Failed` | `(reason)` | Path failed |
+| `Paused` | — | Movement paused |
+| `Resumed` | — | Movement resumed |
+| `Started` | `(target)` | New path started |
+| `Waypoint` | `(index, waypoint)` | Waypoint reached |
 
 ## Configuration
 

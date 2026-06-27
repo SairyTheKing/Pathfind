@@ -77,6 +77,8 @@ export type Pathfind = typeof(setmetatable({} :: {
     _repathThread: thread?,
     _alive: boolean,
     
+    _currentTarget: (Vector3 | Instance)?,
+    
     -- Events
     Completed: Event.Event,
     Blocked: Event.Event,
@@ -86,6 +88,7 @@ export type Pathfind = typeof(setmetatable({} :: {
     Paused: Event.Event,
     Resumed: Event.Event,
     Started: Event.Event,
+    Waypoint: Event.Event,
 }, Pathfind))
 
 function Pathfind.new(character: Model?, config: Types.PathfindConfig?): Pathfind
@@ -103,6 +106,7 @@ function Pathfind.new(character: Model?, config: Types.PathfindConfig?): Pathfin
     self._timeoutThread = nil
     self._repathThread = nil
     self._alive = true
+    self._currentTarget = nil
     
     -- Initialize events
     self.Completed = Event.new()
@@ -113,6 +117,7 @@ function Pathfind.new(character: Model?, config: Types.PathfindConfig?): Pathfin
     self.Paused = Event.new()
     self.Resumed = Event.new()
     self.Started = Event.new()
+    self.Waypoint = Event.new()
     
     -- Initialize subsystems
     self._debug = Debug.new()
@@ -225,6 +230,7 @@ function Pathfind:GoTo(target: Vector3 | BasePart | Model, timeout: number?): Pa
     end
     
     self._debug:Log("GoTo: " .. tostring(targetPos))
+    self._currentTarget = target
     self.Started:Fire(target)
     
     -- Compute and start path
@@ -256,6 +262,7 @@ function Pathfind:Follow(target: Instance, repathInterval: number?): Pathfind
     local interval = repathInterval or self._config.repathInterval or 0.5
     
     self._debug:Log("Following: " .. target:GetFullName())
+    self._currentTarget = target
     self.Started:Fire(target)
     
     -- Start follow loop
@@ -302,6 +309,7 @@ function Pathfind:Stop()
     self._debug:Log("Stopping")
     self._status = "idle"
     self._isPaused = false
+    self._currentTarget = nil
     self._movementEngine:Stop()
     self._pathManager:Clear()
     self._antiStuck:Stop()
@@ -337,6 +345,100 @@ end
 
 function Pathfind:GetProgress(): number
     return self._movementEngine:GetProgress()
+end
+
+function Pathfind:GetTarget(): Vector3?
+    return self._pathManager:GetCurrentGoal()
+end
+
+function Pathfind:GetWaypoints(): { Types.WaypointData }?
+    local state = self._movementEngine:GetState()
+    if #state.waypoints == 0 then
+        return nil
+    end
+    return state.waypoints
+end
+
+function Pathfind:GetPathInfo(): Types.PathInfo
+    local state = self._movementEngine:GetState()
+    local goal = self._pathManager:GetCurrentGoal()
+    local currentPos = self._movementEngine:_getCharacterPosition()
+    
+    local distToTarget: number? = nil
+    if currentPos and goal then
+        distToTarget = (currentPos - goal).Magnitude
+    end
+    
+    return {
+        status = self._status,
+        target = goal,
+        progress = self:GetProgress(),
+        currentWaypoint = state.currentWaypointIndex,
+        totalWaypoints = #state.waypoints,
+        distanceToTarget = distToTarget,
+        pathAttempts = self._pathManager._pathAttempts,
+        isPaused = self._isPaused,
+    }
+end
+
+function Pathfind:IsPaused(): boolean
+    return self._isPaused
+end
+
+function Pathfind:IsAlive(): boolean
+    return self._alive
+end
+
+function Pathfind:GetCharacter(): Model?
+    return self._character
+end
+
+function Pathfind:PreviewPath(target: Vector3 | Instance): Types.PathPreview?
+    if not self._alive then return nil end
+    
+    local targetPos = self:_resolveTargetPosition(target)
+    if not targetPos then
+        return nil
+    end
+    
+    local startPos = self._movementEngine:_getCharacterPosition()
+    if not startPos then
+        return nil
+    end
+    
+    local path = self._pathManager:ComputePath(startPos, targetPos)
+    if not path or path.status ~= Enum.PathStatus.Success then
+        return {
+            waypoints = {},
+            distance = 0,
+            success = false,
+        }
+    end
+    
+    -- Calculate total path distance
+    local totalDistance = 0
+    for i = 2, #path.waypoints do
+        totalDistance += (path.waypoints[i].position - path.waypoints[i - 1].position).Magnitude
+    end
+    
+    return {
+        waypoints = path.waypoints,
+        distance = totalDistance,
+        success = true,
+    }
+end
+
+function Pathfind:CancelGoTo()
+    if not self._alive then return end
+    
+    self._debug:Log("GoTo cancelled")
+    self._status = "idle"
+    self._currentTarget = nil
+    self._movementEngine:Stop()
+    self._pathManager:Clear()
+    self._antiStuck:Stop()
+    self:_cancelThreads()
+    self._debug:Clear()
 end
 
 -- =========================================================================
@@ -528,6 +630,9 @@ function Pathfind:_onWaypointReached(index: number, waypoint: any)
     -- Update anti-stuck on waypoint reached
     self._antiStuck:Reset()
     
+    -- Fire Waypoint event
+    self.Waypoint:Fire(index, waypoint)
+    
     -- Draw current waypoint marker in debug
     if self._config.debug then
         self._debug:DrawCurrentWaypoint(waypoint.position, self._config.debugColor)
@@ -608,6 +713,7 @@ function Pathfind:Destroy()
     self.Paused:Destroy()
     self.Resumed:Destroy()
     self.Started:Destroy()
+    self.Waypoint:Destroy()
     
     self._debug:Log("Pathfind instance destroyed")
     
