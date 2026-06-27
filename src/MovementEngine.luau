@@ -336,7 +336,7 @@ function MovementEngine:_startMovementLoop()
                 end
                 
                 -- Turn toward lookahead target for smoother cornering
-                self:_turnToFace(wayTarget, dt)
+                self:_turnToFace(lookTarget, dt)
                 
                 -- Issue single MoveTo call
                 if self._humanoid then
