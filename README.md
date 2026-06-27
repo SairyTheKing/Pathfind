@@ -22,7 +22,28 @@ A lightweight, modular, production-ready pathfinding library for Roblox that wra
 
 ## Installation
 
-### Option 1: Rojo (Recommended)
+### Option 1: Executor / Loadstring (Fastest)
+
+Just paste this in your executor:
+
+```lua
+local Pathfind = loadstring(game:HttpGet("https://raw.githubusercontent.com/SairyTheKing/Pathfind/master/Loader.luau"))()
+
+-- Example usage
+local path = Pathfind.new(game.Players.LocalPlayer.Character, {
+    debug = true,
+})
+
+path.Completed:Connect(function(success)
+    print("Reached target:", success)
+end)
+
+path:GoTo(workspace.TargetPart)
+```
+
+> **No HTTP?** Copy-paste the entire contents of [`Loader.luau`](Loader.luau) into your executor's script editor.
+
+### Option 2: Rojo (Recommended)
 
 1. Clone this repository or download the `src/` folder
 2. Place it in your Rojo project under `ServerScriptService` or `ReplicatedStorage`

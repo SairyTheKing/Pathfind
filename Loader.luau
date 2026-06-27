@@ -628,7 +628,7 @@ function Pathfind.new(character, config)
     local self = setmetatable({}, Pathfind)
     self._config = {}
     for key, value in DEFAULT_CONFIG do
-        self._config[key] = config and config[key] or value
+        self._config[key] = (config ~= nil and config[key] ~= nil) and config[key] or value
     end
 
     self._character = character
@@ -807,14 +807,7 @@ function Pathfind:Stop()
 end
 
 function Pathfind:CancelGoTo()
-    if not self._alive then return end
-    self._status = "idle"
-    self._currentTarget = nil
-    self._movementEngine:Stop()
-    self._pathManager:Clear()
-    self._antiStuck:Stop()
-    self:_cancelThreads()
-    self._debug:Clear()
+    self:Stop()
 end
 
 function Pathfind:Pause()

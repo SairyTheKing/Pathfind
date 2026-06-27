@@ -97,7 +97,7 @@ function Pathfind.new(character: Model?, config: Types.PathfindConfig?): Pathfin
     -- Merge config with defaults
     self._config = {}
     for key, value in DEFAULT_CONFIG do
-        (self._config :: any)[key] = (config :: any)?.[key] or value
+        (self._config :: any)[key] = (config ~= nil and (config :: any)[key] ~= nil) and (config :: any)[key] or value
     end
     
     self._character = character
