@@ -113,7 +113,7 @@ path:IsAlive()           --> boolean
 
 ```lua
 path:SetConfig("debug", true)
-path:GetConfig("turnSpeed") --> 12
+path:GetConfig("turnSpeed") --> 16
 path:EnableDebug(true)
 path:SetCharacter(newCharacter)
 ```
@@ -153,6 +153,8 @@ local path = Pathfind.new(character, {
     reachDistance = 2.5,        -- Waypoint reach threshold
     jumpPower = nil,            -- Override jump power
     lookAhead = 1,              -- Waypoints ahead for smooth turning
+    smoothMovement = true,       -- Catmull-Rom curve smoothing
+    smoothSegments = 4,          -- Segments per waypoint pair
 
     -- Path Management
     repathInterval = 0.5,       -- Seconds between repath checks

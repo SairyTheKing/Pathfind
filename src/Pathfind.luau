@@ -4,21 +4,10 @@
     The main Pathfind class that orchestrates pathfinding, movement,
     anti-stuck recovery, and debug visualization.
     
-    Usage:
-        local Pathfind = require(path.to.Pathfind)
-        local path = Pathfind.new(character, { debug = true })
-        
-        path:GoTo(workspace.TargetPart)
-        path.Completed:Connect(function(success)
-            print("Path completed:", success)
-        end)
-    
-    @author Pathfind Contributors
-    @version 1.0.0
+    @author SairyTheKing
+    @version 1.2.0
     @license MIT
 ]]
-
-local RunService = game:GetService("RunService")
 
 -- Import sub-modules
 local Types = require(script.Parent.Types)
@@ -44,6 +33,8 @@ local DEFAULT_CONFIG: Types.PathfindConfig = {
     reachDistance = 2.5,
     jumpPower = nil,
     lookAhead = 1,
+    smoothMovement = true,
+    smoothSegments = 4,
     
     repathInterval = 0.5,
     repathThreshold = 4,
@@ -110,6 +101,7 @@ function Pathfind.new(character: Model?, config: Types.PathfindConfig?): Pathfin
     self._repathThread = nil
     self._alive = true
     self._currentTarget = nil
+    self._followThread = nil
     
     -- Initialize events
     self.Completed = Event.new()
@@ -273,10 +265,12 @@ function Pathfind:Follow(target: Instance, repathInterval: number?, stopDistance
     self.Started:Fire(target)
     
     -- Start follow loop
-    task.spawn(function()
+    if self._followThread then task.cancel(self._followThread) end
+    self._followThread = task.spawn(function()
         while self._alive and target and target.Parent do
             if not self._alive then break end
             if self._isPaused then task.wait(0.1) continue end
+            if self._status ~= "computing" and self._status ~= "moving" then break end
             
             -- Get target position
             local targetPos = self:_resolveTargetPosition(target)
@@ -293,6 +287,7 @@ function Pathfind:Follow(target: Instance, repathInterval: number?, stopDistance
                     self._debug:Log("Reached follow target (" .. math.floor(distToTarget) .. " studs)")
                     self:Stop()
                     self.Completed:Fire(true)
+                    self._followThread = nil
                     return
                 end
                 
@@ -314,6 +309,7 @@ function Pathfind:Follow(target: Instance, repathInterval: number?, stopDistance
             self.Completed:Fire(false, "Follow loop ended")
             self._status = "idle"
         end
+        self._followThread = nil
     end)
     
     return self
@@ -326,6 +322,7 @@ function Pathfind:Stop()
     self._status = "idle"
     self._isPaused = false
     self._currentTarget = nil
+    if self._followThread then task.cancel(self._followThread) self._followThread = nil end
     self._movementEngine:Stop()
     self._pathManager:Clear()
     self._antiStuck:Stop()
@@ -445,16 +442,7 @@ function Pathfind:PreviewPath(target: Vector3 | Instance): Types.PathPreview?
 end
 
 function Pathfind:CancelGoTo()
-    if not self._alive then return end
-    
-    self._debug:Log("GoTo cancelled")
-    self._status = "idle"
-    self._currentTarget = nil
-    self._movementEngine:Stop()
-    self._pathManager:Clear()
-    self._antiStuck:Stop()
-    self:_cancelThreads()
-    self._debug:Clear()
+    self:Stop()
 end
 
 
@@ -677,6 +665,7 @@ function Pathfind:_fail(reason: string)
     self._movementEngine:Stop()
     self._pathManager:Clear()
     self.Failed:Fire(reason)
+    self.Completed:Fire(false, reason)
     self._status = "idle"
 end
 

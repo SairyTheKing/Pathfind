@@ -52,6 +52,8 @@ export type PathfindConfig = {
     reachDistance: number?,         -- Studs to consider a waypoint "reached" (default: 2.5)
     jumpPower: number?,             -- Override JumpPower (nil = keep current)
     lookAhead: number?,             -- Waypoints ahead for smooth turns (default: 1)
+    smoothMovement: boolean?,        -- Catmull-Rom curve smoothing (default: true)
+    smoothSegments: number?,         -- Segments per waypoint pair (default: 4)
 
     -- Path Management
     repathInterval: number?,        -- Seconds between repath checks (default: 0.5)
@@ -213,7 +215,7 @@ path:GoTo(workspace.B)
 
 ---
 
-### `:Follow(target, repathInterval?)`
+### `:Follow(target, repathInterval?, stopDistance?)`
 
 Continuously follows a moving target by recomputing paths periodically.
 
@@ -223,6 +225,7 @@ Continuously follows a moving target by recomputing paths periodically.
 |------|------|----------|-------------|
 | `target` | `Instance` | Yes | The instance to follow (must have a BasePart). |
 | `repathInterval` | `number?` | No | Seconds between repath checks. Overrides config `repathInterval`. |
+| `stopDistance` | `number?` | No | Stop following when this close (studs). Overrides config `followStopDistance`. Default: `3`. |
 
 **Returns:** `Pathfind` (for method chaining)
 
@@ -230,6 +233,7 @@ Continuously follows a moving target by recomputing paths periodically.
 - Runs an async follow loop until the target is destroyed, `:Stop()` is called, or the path fails
 - Recomputes path when target moves beyond `repathThreshold`
 - Fires `Repath` each time the path is recalculated
+- Fires `Completed(true)` when within `stopDistance` of the target
 - Fires `Completed(false, "Follow loop ended")` when the loop exits
 
 **Example:**
@@ -237,8 +241,11 @@ Continuously follows a moving target by recomputing paths periodically.
 ```lua
 path:Follow(game.Players.LocalPlayer.Character, 0.3)
 
+-- Follow with custom stop distance
+path:Follow(game.Workspace.Enemy, 0.5, 2) -- stop 2 studs away
+
 -- Follow with completion handler
-path.Follow(game.Workspace.Enemy, 0.5)
+path:Follow(game.Workspace.Enemy, 0.5)
     .Completed:Connect(function(success)
         print("Stopped following:", success)
     end)
@@ -520,7 +527,7 @@ Returns the current value of a configuration key.
 **Example:**
 
 ```lua
-print(path:GetConfig("turnSpeed")) --> 12
+print(path:GetConfig("turnSpeed")) --> 16
 print(path:GetConfig("debug")) --> false
 ```
 
@@ -676,6 +683,8 @@ end)
     turnSpeed           = 16,           -- radians/sec
     reachDistance        = 2.5,         -- studs
     lookAhead           = 1,           -- waypoints ahead for smooth turns
+    smoothMovement      = true,         -- Catmull-Rom curve smoothing
+    smoothSegments      = 4,            -- interpolation segments per pair
     jumpPower           = nil,          -- Keep current JumpPower
 
     -- Path Management
@@ -720,6 +729,8 @@ end)
 | `reachDistance` | `number` | `2.5` | How close (in studs) the character must be to a waypoint to count as "reached". |
 | `jumpPower` | `number?` | `nil` | If set, overrides the character's `JumpPower`. |
 | `lookAhead` | `number` | `1` | How many waypoints ahead to aim for smoother cornering. |
+| `smoothMovement` | `boolean` | `true` | Enable Catmull-Rom curve smoothing between waypoints. |
+| `smoothSegments` | `number` | `4` | Number of interpolation segments per waypoint pair. Higher = smoother but more waypoints. |
 | `repathInterval` | `number` | `0.5` | How often (in seconds) to check if the path should be recalculated. |
 | `repathThreshold` | `number` | `4` | How far (in studs) the target must move to trigger a repath. |
 | `maxPathAttempts` | `number` | `3` | Maximum number of failed path computations before giving up. |
