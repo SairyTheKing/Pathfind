@@ -5,7 +5,7 @@
     anti-stuck recovery, and debug visualization.
     
     @author SairyTheKing
-    @version 1.2.0
+    @version 1.3.0
     @license MIT
 ]]
 
@@ -91,6 +91,12 @@ function Pathfind.new(character: Model?, config: Types.PathfindConfig?): Pathfin
     self._config = {}
     for key, value in DEFAULT_CONFIG do
         (self._config :: any)[key] = (config ~= nil and (config :: any)[key] ~= nil) and (config :: any)[key] or value
+    end
+    
+    -- Auto-detect character: try LocalPlayer if nil passed
+    if not character then
+        local ok, lp = pcall(function() return game:GetService("Players").LocalPlayer end)
+        if ok and lp and lp.Character then character = lp.Character end
     end
     
     self._character = character
@@ -643,6 +649,7 @@ function Pathfind:_onWaypointReached(index: number, waypoint: any)
 end
 
 function Pathfind:_onPathFinished(success: boolean)
+    if self._status == "idle" or self._status == "failed" then return end
     self._antiStuck:Stop()
     self:_cancelThreads()
     
@@ -657,12 +664,13 @@ function Pathfind:_onPathFinished(success: boolean)
 end
 
 function Pathfind:_fail(reason: string)
+    if self._status == "idle" or self._status == "failed" then return end
     self._debug:Log("Failed: " .. reason, "ERROR")
     self._status = "failed"
-    self._antiStuck:Stop()
-    self:_cancelThreads()
-    self._movementEngine:Stop()
-    self._pathManager:Clear()
+    pcall(function() self._antiStuck:Stop() end)
+    pcall(function() self:_cancelThreads() end)
+    pcall(function() self._movementEngine:Stop() end)
+    pcall(function() self._pathManager:Clear() end)
     self.Failed:Fire(reason)
     self.Completed:Fire(false, reason)
     self._status = "idle"
@@ -707,7 +715,7 @@ function Pathfind:Destroy()
     if not self._alive then return end
     
     self._alive = false
-    self:Stop()
+    pcall(function() self:Stop() end)
     
     self.Completed:Destroy()
     self.Blocked:Destroy()

@@ -1,4 +1,4 @@
--- Pathfind v1.2.0
+-- Pathfind v1.3.0
 -- Lightweight pathfinding library for Roblox executors
 -- Usage: local Pathfind = loadstring(game:HttpGet("https://raw.githubusercontent.com/SairyTheKing/Pathfind/master/Loader.luau"))()
 
@@ -392,12 +392,17 @@ end
 
 function MovementEngine:_turnToFace(targetPos, dt)
     if not self._rootPart or not self._rootPart.Parent then return end
-    local currentPos = self._rootPart.Position
-    local dir = (targetPos - currentPos) * Vector3.new(1, 0, 1)
-    if dir.Magnitude < 0.01 then return end
-    local targetCF = CFrame.lookAt(currentPos, currentPos + dir)
-    local alpha = math.min(1, self._turnSpeed * dt)
-    self._rootPart.CFrame = self._rootPart.CFrame:Lerp(targetCF, alpha)
+    local rp = self._rootPart.Position
+    local dx = targetPos.X - rp.X
+    local dz = targetPos.Z - rp.Z
+    if dx * dx + dz * dz < 0.0001 then return end -- skip sqrt (magnitude check)
+    local targetCF = CFrame.lookAt(rp, rp + Vector3.new(dx, 0, dz))
+    local alpha = self._turnSpeed * dt
+    if alpha >= 1 then
+        self._rootPart.CFrame = targetCF
+    else
+        self._rootPart.CFrame = self._rootPart.CFrame:Lerp(targetCF, alpha)
+    end
 end
 
 function MovementEngine:_getRaycastParams()
@@ -446,6 +451,7 @@ end
 
 function MovementEngine:_startMovementLoop()
     if self._connection then self._connection:Disconnect() end
+    local flatOne = Vector3.new(1, 0, 1) -- cached constant
     self._connection = game:GetService("RunService").Heartbeat:Connect(function(dt)
         if not self._state.isMoving or self._state.isPaused then return end
         if not self:_isCharacterValid() then
@@ -457,21 +463,27 @@ function MovementEngine:_startMovementLoop()
         self._state.lastPosition = currentPos
         local idx = self._state.currentWaypointIndex
         local wps = self._state.waypoints
+        local wpsLen = #wps
 
-        if idx > #wps then
+        if idx > wpsLen then
             self:Stop()
             if self._onPathCompleted then self._onPathCompleted(true) end
             return
         end
 
         local wp = wps[idx]
-        local dist = (currentPos - wp.position).Magnitude
+        local dx = currentPos.X - wp.position.X
+        local dz = currentPos.Z - wp.position.Z
+        local dist = math.sqrt(dx * dx + dz * dz) -- skip Y for horizontal distance (faster)
 
         if dist <= self._reachDistance then
             if self._onReachWaypoint then self._onReachWaypoint(idx, wp) end
             self._state.currentWaypointIndex = idx + 1
             self._activeMoveToIndex = 0
-            if self._losCheckEnabled and self._state.targetPosition then self:_trySkipWaypoints(currentPos) end
+            -- Skip LOS for short paths (< 5 waypoints) since there's nothing to meaningfully skip
+            if self._losCheckEnabled and self._state.targetPosition and wpsLen >= 5 then
+                self:_trySkipWaypoints(currentPos)
+            end
         else
             local lookTarget = self:_getLookaheadPosition(idx)
             if self._activeMoveToIndex ~= idx then
@@ -528,6 +540,11 @@ function Pathfind.new(character, config)
     self._config = {}
     for key, value in DEFAULT_CONFIG do
         self._config[key] = (config ~= nil and config[key] ~= nil) and config[key] or value
+    end
+    -- Auto-detect character: try LocalPlayer if nil passed
+    if not character then
+        local ok, lp = pcall(function() return game:GetService("Players").LocalPlayer end)
+        if ok and lp and lp.Character then character = lp.Character end
     end
     self._character = character
     self._status = "idle"
@@ -849,6 +866,7 @@ function Pathfind:_onWaypointReached(index, waypoint)
 end
 
 function Pathfind:_onPathFinished(success)
+    if self._status == "idle" or self._status == "failed" then return end
     self._antiStuck:Stop()
     self:_cancelThreads()
     self.Completed:Fire(success)
@@ -856,12 +874,13 @@ function Pathfind:_onPathFinished(success)
 end
 
 function Pathfind:_fail(reason)
+    if self._status == "idle" or self._status == "failed" then return end
     self._debug:Log("Failed: " .. reason, "ERROR")
     self._status = "failed"
-    self._antiStuck:Stop()
-    self:_cancelThreads()
-    self._movementEngine:Stop()
-    self._pathManager:Clear()
+    pcall(function() self._antiStuck:Stop() end)
+    pcall(function() self:_cancelThreads() end)
+    pcall(function() self._movementEngine:Stop() end)
+    pcall(function() self._pathManager:Clear() end)
     self.Failed:Fire(reason)
     self.Completed:Fire(false, reason)
     self._status = "idle"
@@ -884,7 +903,7 @@ end
 function Pathfind:Destroy()
     if not self._alive then return end
     self._alive = false
-    self:Stop()
+    pcall(function() self:Stop() end)
     self.Completed:Destroy()
     self.Blocked:Destroy()
     self.Repath:Destroy()

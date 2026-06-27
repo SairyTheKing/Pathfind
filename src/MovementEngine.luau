@@ -8,7 +8,7 @@
     Uses lookahead for smooth cornering.
     
     @author SairyTheKing
-    @version 1.2.0
+    @version 1.3.0
     @license MIT
 ]]
 
@@ -224,17 +224,18 @@ end
 function MovementEngine:_turnToFace(targetPos: Vector3, dt: number)
     if not self._rootPart or not self._rootPart.Parent then return end
     
-    local currentPos = self._rootPart.Position
-    local direction = (targetPos - currentPos) * Vector3.new(1, 0, 1) -- Flatten to horizontal
+    local rp = self._rootPart.Position
+    local dx = targetPos.X - rp.X
+    local dz = targetPos.Z - rp.Z
+    if dx * dx + dz * dz < 0.0001 then return end -- skip sqrt
     
-    if direction.Magnitude < 0.01 then return end
-    
-    local targetCF = CFrame.lookAt(currentPos, currentPos + direction)
-    local currentCF = self._rootPart.CFrame
-    
-    -- Smooth rotation using actual delta time
-    local alpha = math.min(1, self._turnSpeed * dt)
-    self._rootPart.CFrame = currentCF:Lerp(targetCF, alpha)
+    local targetCF = CFrame.lookAt(rp, rp + Vector3.new(dx, 0, dz))
+    local alpha = self._turnSpeed * dt
+    if alpha >= 1 then
+        self._rootPart.CFrame = targetCF
+    else
+        self._rootPart.CFrame = self._rootPart.CFrame:Lerp(targetCF, alpha)
+    end
 end
 
 function MovementEngine:_getRaycastParams(): RaycastParams
@@ -342,9 +343,9 @@ function MovementEngine:_startMovementLoop()
         
         local waypointIndex = self._state.currentWaypointIndex
         local waypoints = self._state.waypoints
+        local wpsLen = #waypoints
         
-        -- Check if we've completed the entire path
-        if waypointIndex > #waypoints then
+        if waypointIndex > wpsLen then
             self:Stop()
             if self._onPathCompleted then
                 self._onPathCompleted(true)
@@ -353,46 +354,40 @@ function MovementEngine:_startMovementLoop()
         end
         
         local currentWaypoint = waypoints[waypointIndex]
-        local waypointPos = currentWaypoint.position
-        local distToWaypoint = (currentPos - waypointPos).Magnitude
+        local wpPos = currentWaypoint.position
+        -- Fast horizontal distance (skip Y component, avoid sqrt)
+        local dx = currentPos.X - wpPos.X
+        local dz = currentPos.Z - wpPos.Z
+        local dist = dx * dx + dz * dz
+        local reachSq = self._reachDistance * self._reachDistance
         
-        if distToWaypoint <= self._reachDistance then
-            -- Reached waypoint
+        if dist <= reachSq then
             if self._onReachWaypoint then
                 self._onReachWaypoint(waypointIndex, currentWaypoint)
             end
-            
-            -- Advance to next waypoint
             self._state.currentWaypointIndex = waypointIndex + 1
             self._activeMoveToIndex = 0
-            
-            -- LOS skip optimization
-            if self._losCheckEnabled and self._state.targetPosition then
+            -- Skip LOS for short paths (< 5 waypoints)
+            if self._losCheckEnabled and self._state.targetPosition and wpsLen >= 5 then
                 self:_trySkipWaypoints(currentPos)
             end
         else
-            -- Get the lookahead target for smooth turning
             local lookTarget = self:_getLookaheadPosition(waypointIndex)
-            if not lookTarget then lookTarget = waypointPos end
+            if not lookTarget then lookTarget = wpPos end
             
-            -- Only issue MoveTo once per waypoint to avoid jitter
             if self._activeMoveToIndex ~= waypointIndex then
                 self._activeMoveToIndex = waypointIndex
                 
-                -- Handle jumping
                 if currentWaypoint.action == Enum.PathWaypointAction.Jump and self._humanoid then
                     self._humanoid.Jump = true
                 end
                 
-                -- Turn toward lookahead target for smoother cornering
                 self:_turnToFace(lookTarget, dt)
                 
-                -- Issue single MoveTo call
                 if self._humanoid then
-                    self._humanoid:MoveTo(waypointPos)
+                    self._humanoid:MoveTo(wpPos)
                 end
             else
-                -- Continue smooth turning
                 self:_turnToFace(lookTarget, dt)
             end
         end
