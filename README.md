@@ -183,8 +183,6 @@ local path = Pathfind.new(character, {
 ### Basic Navigation
 
 ```lua
-local Pathfind = require(path.to.Pathfind)
-
 local path = Pathfind.new(workspace.NPC)
 
 path.Completed:Connect(function(success)
